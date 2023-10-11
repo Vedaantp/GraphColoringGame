@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Graph Coloring Visualization</title>
+</head>
+<body style="background-color:darkgray;">
+    <h1 class="title">Graph Coloring Game</h1>
+    <div style="display: flex;">
+        <canvas id="userCanvas" width="600", height="600"></canvas>
+        <canvas id="algorithmCanvas" width="600", height="600"></canvas>
+    </div>
+    <style>
+
+        #userCanvas {
+            border: 0
+        }
+
+        #algorithmCanvas {
+            border: 0;
+            margin-left: 250px;
+        }
+
+        .title{
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 50px;
+        }
+
+    </style>
+
+    <script>
+        class Graph {
+            constructor(vertices) {
+                this.V = vertices; // Number of vertices
+                this.adj = [vertices];
+                this.order = [vertices];
+
+                for (let i = 0; i < vertices; i++){
+                    this.adj[i] = [];
+                    this.order[i] = [];
+                }
+
+                this.result = new Array(vertices).fill(-1);
+            }
+
+            addEdge(v, w) {
+                this.adj[v].push(w);
+                this.adj[w].push(v);
+            }
+
+            exists(v, w){
+                for (const j of this.adj[v]){
+                    if (j == w){
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            sleep(seconds) {
+                const start = new Date().getTime();
+                while (new Date().getTime() - start < seconds * 1000) {}
+            }
+
+            greedyColoring() {
+                const available = new Array(this.V).fill(false);
+
+                for (let v = 0; v < this.V; v++) {
+                    for (const i of this.adj[v]) {
+                        if (this.result[i] !== -1) {
+                            available[this.result[i]] = true;
+                        }
+                    }
+
+                    let color;
+
+                    for (color = 0; color < this.V; color++) {
+                        this.order[v].push(color);
+                        vertextArray[v].coloring.push(nodeColors[color]);
+                        if (!available[color]) {
+                            break;
+                        }
+                    }
+
+                    this.result[v] = color;
+                    vertextArray[v].coloring.push(nodeColors[color]);
+                    // vertextArray[v].color = nodeColors[color];
+
+
+                    for (const i of this.adj[v]) {
+                        if (this.result[i] !== -1) {
+                            available[this.result[i]] = false;
+                        }
+                    }
+                }
+            }
+        }
+
+        class Vertex{
+            constructor(posX, posY, color, radius){
+                this.X = posX;
+                this.Y = posY;
+                this.color = color;
+                this.radius = radius;
+                this.user_color = 'white';
+                this.color_counter = -1;
+                this.coloring = [];
+            }
+        }
+
+        const canvas = document.getElementById('userCanvas');
+        const ctx = canvas.getContext('2d');
+        const canvas2 = document.getElementById('algorithmCanvas');
+        const ctx2 = canvas2.getContext('2d');
+
+        const nodeRadius = 20;
+        const nodeColors = ['red', 'green', 'blue', 'orange', 'purple', 'yellow', 'pink', 'brown', 'lightblue', 'violet', 'white'];
+        
+        const vertextArray = [];
+        const size = Math.floor(Math.random() * (10 - 5 + 1)) + 5;
+        const g = new Graph(size); 
+
+        let vertex_counter = 0;
+        let frame = 0;
+        const framePerNode = 60;
+        let color_index = -1;
+
+        function drawNode() {
+            ctx.clearRect(0,0,canvas.width, canvas.height);
+
+            drawEdgesUser();
+
+            for (let i = 0; i < g.V; i++){
+                ctx.beginPath();
+                ctx.arc(vertextArray[i].X, vertextArray[i].Y, nodeRadius, 0, 2 * Math.PI);
+                ctx.fillStyle = vertextArray[i].user_color;
+                ctx.fill();
+                ctx.stroke();
+            }
+        }
+
+        function drawAlgoNode(){
+            ctx2.clearRect(0,0,canvas2.width, canvas2.height);
+
+            drawEdgesAnimation();
+            
+            for (let i = 0; i < g.V; i++){
+                ctx2.beginPath();
+                ctx2.arc(vertextArray[i].X, vertextArray[i].Y, nodeRadius, 0, 2 * Math.PI);
+                ctx2.fillStyle = vertextArray[i].color;
+                ctx2.fill();
+                ctx2.stroke();
+            }
+        }
+
+        function animate(){
+            if (color_index < vertextArray[vertex_counter].coloring.length - 1){
+                frame++;
+
+                if (frame >= framePerNode){
+                    frame = 0;
+                    color_index++;
+                    vertextArray[vertex_counter].color = vertextArray[vertex_counter].coloring[color_index];
+                }
+
+                drawAlgoNode();
+                requestAnimationFrame(animate);
+            }
+            else{
+                color_index = -1;
+                vertex_counter++;
+
+                drawAlgoNode();
+                requestAnimationFrame(animate);
+            }
+        }
+
+        function drawEdgesUser() {
+            for (let v = 0; v < g.V; v++) {
+                const x1 = vertextArray[v].X;
+                const y1 = vertextArray[v].Y;
+
+                for (const w of g.adj[v]) {
+                    if (w < v){
+                        const x2 = vertextArray[w].X;
+                        const y2 = vertextArray[w].Y;
+
+                        ctx.beginPath();
+                        ctx.moveTo(x1, y1);
+                        ctx.lineTo(x2, y2);
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+
+        function drawEdgesAnimation() {
+            for (let v = 0; v < g.V; v++) {
+                const x1 = vertextArray[v].X;
+                const y1 = vertextArray[v].Y;
+
+                for (const w of g.adj[v]) {
+                    if (w < v){
+                        const x2 = vertextArray[w].X;
+                        const y2 = vertextArray[w].Y;
+
+                        ctx2.beginPath();
+                        ctx2.moveTo(x1, y1);
+                        ctx2.lineTo(x2, y2);
+                        ctx2.stroke();
+                    }
+                }
+            }
+        }
+
+        function getNodeAtCoordinates(x, y) {
+            return vertextArray.find(node => {
+                const distance = Math.sqrt((node.X - x) ** 2 + (node.Y - y) ** 2);
+                return distance <= nodeRadius;
+            });
+        }
+
+        for (let i = 0; i < g.V; i++){
+            for (let j = 0; j < g.V; j++){
+                if (i != j && !g.exists(i,j)){
+                    if (g.adj[j].length > 1){
+                        if (Math.random() < 0.05){
+                            g.addEdge(i,j);
+                        }
+                    }
+                    else if (Math.random() < 0.3){
+                        g.addEdge(i,j);
+                    }
+                }
+            }
+        }
+
+        for (let v = 0; v < g.V; v++) {
+            let posX = (canvas.width / 2) + 200 * Math.cos((v/g.V) * 2 * Math.PI);
+            let posY = (canvas.width / 2) + 200 * Math.sin((v/g.V) * 2 * Math.PI);
+            vertextArray.push(new Vertex(posX, posY, 'white', nodeRadius));
+        }
+
+        g.greedyColoring();
+
+        canvas.addEventListener("click", function(event) {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = event.clientX - rect.left;
+            const mouseY = event.clientY - rect.top;
+            const clickedNode = getNodeAtCoordinates(mouseX, mouseY);
+
+            if (clickedNode) {
+                clickedNode.color_counter += 1;
+                clickedNode.color_counter %= g.V;
+                clickedNode.user_color = nodeColors[clickedNode.color_counter];
+                drawNode();
+            }
+        });
+
+        drawNode();
+        drawAlgoNode();
+        animate();
+
+    </script>
+</body>
+</html>
