@@ -6,13 +6,27 @@
 <body style="background-color:darkgray;">
     <h1 class="title">Graph Coloring Game</h1>
     <div style="display: flex;">
-        <button style="margin-left: 17%; width: auto;" id="verifyButton">Check Answer</button>
-        <button style="margin-left: 53%;" id="startButton">Start Algorithm</button>
-        <button style="margin-left: 53%; display: none;" id="pauseButton">Pause Algorithm</button>
+        <div style="display: flex; flex-direction: column; width: 50%;">
+            <div style="display: flex; justify-content: center; margin-bottom: 50px;">
+                <button style="width: auto;" id="verifyButton">Check Answer</button>
+            </div>
+            <div style="display: flex; justify-content: center;">
+                <canvas id="userCanvas"></canvas>
+            </div>
+
+        </div>
+        <div style="display: flex; flex-direction: column; width: 50%;">
+            <div style="display: flex; justify-content: center; margin-bottom: 50px;">
+                <button id="startButton">Start Algorithm</button>
+                <button style="display: none;" id="pauseButton">Pause Algorithm</button>
+            </div> 
+            <div style="display: flex; justify-content: center;">
+                <canvas id="algorithmCanvas"></canvas>
+            </div>
+        </div>
     </div>
-    <div style="display: flex;">
-        <canvas id="userCanvas"></canvas>
-        <canvas id="algorithmCanvas"></canvas>
+    <div style="display: flex; flex-direction: column; align-items: center;">
+        <button id="newGraphButton">New Graph</button>
     </div>
     <style>
 
@@ -33,6 +47,24 @@
             flex-direction: column;
             align-items: center;
             font-size: 50px;
+        }
+
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: confetti-fall 5s ease-out infinite;
+        }
+        @keyframes confetti-fall {
+            0% {
+                transform: translate(calc(100vw * (0.5 - random())), -10px) scaleY(0.5);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(calc(100vw * (0.5 - random())), 100vh) scaleY(1);
+                opacity: 0;
+            }
         }
 
     </style>
@@ -121,7 +153,8 @@
 
         const nodeRadius = 20;
         const nodeColors = ['red', 'green', 'blue', 'orange', 'purple', 'yellow', 'pink', 'brown', 'lightblue', 'violet', 'white'];
-        
+        const colors = ["red", "green", "blue", "yellow", "purple"];
+
         const vertextArray = [];
         const size = Math.floor(Math.random() * (10 - 5 + 1)) + 5;
         const g = new Graph(size); 
@@ -134,6 +167,7 @@
         const startButton = document.getElementById("startButton");
         const pauseButton = document.getElementById("pauseButton");
         const checkButton = document.getElementById("verifyButton");
+        const newGraphButton = document.getElementById("newGraphButton");
         let isPaused = false;
         let isDone = false;
 
@@ -270,10 +304,10 @@
             ctx2.clearRect(0,0,canvas2.width, canvas2.height);
 
 
-            canvas.width = containerWidth/2.5;
-            canvas.height = containerWidth/2.5;
-            canvas2.width = containerWidth/2.5;
-            canvas2.height = containerWidth/2.5;
+            canvas.width = containerWidth/2;
+            canvas.height = containerWidth/2;
+            canvas2.width = containerWidth/2;
+            canvas2.height = containerWidth/2;
 
             for (let i = 0; i < g.V; i++) {
                 vertextArray[i].X = (canvas.width / 2) + canvas.width/2.5 * Math.cos((i/g.V) * 2 * Math.PI);
@@ -282,6 +316,23 @@
 
             drawNode();
             drawAlgoNode();
+        }
+
+        function createConfetti(numPieces) {
+            for (let i = 0; i < numPieces; i++) {
+                const confetti = document.createElement("div");
+                confetti.classList.add("confetti");
+                confetti.style.left = `${Math.random() * 100}vw`; // Random horizontal position
+                confetti.style.top = `${Math.random() * 100}vh`; // Random vertical position
+                confetti.style.animationDuration = `${Math.random() * 5 + 1}s`; // Random animation duration
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)]; // Random color from the predefined set
+                document.body.appendChild(confetti);
+
+                // Remove confetti element after animation completes
+                confetti.addEventListener("animationiteration", function () {
+                    confetti.remove();
+                });
+            }
         }
 
         for (let i = 0; i < g.V; i++){
@@ -338,10 +389,24 @@
         });
 
         checkButton.addEventListener("click", async function() {
+
             for (let i = 0; i < g.V; i++){
-                console.log(vertextArray[i].user_color);
+                for (const j of g.adj[i]) {
+                    if (vertextArray[i].user_color == vertextArray[j].user_color) {
+                        console.log("Bad solution");
+                        return;
+                    }
+                }
             }
+
+            console.log("Good solution");
+
+            createConfetti(200);
         });
+
+        newGraphButton.addEventListener("click", async function() {
+            location.reload();
+        })
 
         window.addEventListener("resize", resizeCanvas);
 
