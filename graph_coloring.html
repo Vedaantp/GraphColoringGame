@@ -6,18 +6,26 @@
 <body style="background-color:darkgray;">
     <h1 class="title">Graph Coloring Game</h1>
     <div style="display: flex;">
-        <canvas id="userCanvas" width="600", height="600"></canvas>
-        <canvas id="algorithmCanvas" width="600", height="600"></canvas>
+        <button style="margin-left: 17%; width: auto;" id="verifyButton">Check Answer</button>
+        <button style="margin-left: 53%;" id="startButton">Start Algorithm</button>
+        <button style="margin-left: 53%; display: none;" id="pauseButton">Pause Algorithm</button>
+    </div>
+    <div style="display: flex;">
+        <canvas id="userCanvas"></canvas>
+        <canvas id="algorithmCanvas"></canvas>
     </div>
     <style>
 
         #userCanvas {
-            border: 0
+            border: 0;
+            display: flex;
+            justify-content: flex-start;
         }
 
         #algorithmCanvas {
             border: 0;
-            margin-left: 250px;
+            display: flex;
+            justify-content: flex-end;
         }
 
         .title{
@@ -32,7 +40,7 @@
     <script>
         class Graph {
             constructor(vertices) {
-                this.V = vertices; // Number of vertices
+                this.V = vertices;
                 this.adj = [vertices];
                 this.order = [vertices];
 
@@ -58,11 +66,6 @@
                 return false;
             }
 
-            sleep(seconds) {
-                const start = new Date().getTime();
-                while (new Date().getTime() - start < seconds * 1000) {}
-            }
-
             greedyColoring() {
                 const available = new Array(this.V).fill(false);
 
@@ -85,8 +88,6 @@
 
                     this.result[v] = color;
                     vertextArray[v].coloring.push(nodeColors[color]);
-                    // vertextArray[v].color = nodeColors[color];
-
 
                     for (const i of this.adj[v]) {
                         if (this.result[i] !== -1) {
@@ -111,8 +112,12 @@
 
         const canvas = document.getElementById('userCanvas');
         const ctx = canvas.getContext('2d');
+        canvas.width = 600;
+        canvas.height = 600;
         const canvas2 = document.getElementById('algorithmCanvas');
         const ctx2 = canvas2.getContext('2d');
+        canvas2.width = 600;
+        canvas2.height = 600;
 
         const nodeRadius = 20;
         const nodeColors = ['red', 'green', 'blue', 'orange', 'purple', 'yellow', 'pink', 'brown', 'lightblue', 'violet', 'white'];
@@ -126,6 +131,12 @@
         const framePerNode = 60;
         let color_index = -1;
 
+        const startButton = document.getElementById("startButton");
+        const pauseButton = document.getElementById("pauseButton");
+        const checkButton = document.getElementById("verifyButton");
+        let isPaused = false;
+        let isDone = false;
+
         function drawNode() {
             ctx.clearRect(0,0,canvas.width, canvas.height);
 
@@ -133,7 +144,7 @@
 
             for (let i = 0; i < g.V; i++){
                 ctx.beginPath();
-                ctx.arc(vertextArray[i].X, vertextArray[i].Y, nodeRadius, 0, 2 * Math.PI);
+                ctx.arc(vertextArray[i].X, vertextArray[i].Y , nodeRadius, 0, 2 * Math.PI);
                 ctx.fillStyle = vertextArray[i].user_color;
                 ctx.fill();
                 ctx.stroke();
@@ -155,6 +166,33 @@
         }
 
         function animate(){
+
+            function paused(){
+                if (isPaused){
+                    setTimeout(function (){}, 1000)
+                    paused();
+                }
+            }
+
+            if (isPaused){
+                paused();
+            }
+
+            if (vertex_counter >= g.V){
+
+                color_index = -1;
+                vertex_counter = 0;
+                frame = 0;
+                pauseButton.click();
+
+                for (let i = 0; i < g.V; i++) {
+                    vertextArray[i].color = 'white';
+                }
+
+                return;
+            }
+
+
             if (color_index < vertextArray[vertex_counter].coloring.length - 1){
                 frame++;
 
@@ -174,6 +212,7 @@
                 drawAlgoNode();
                 requestAnimationFrame(animate);
             }
+            
         }
 
         function drawEdgesUser() {
@@ -221,6 +260,30 @@
             });
         }
 
+        function resizeCanvas() {
+            const size = Math.min(window.innerHeight, window.innerWidth);
+            const containerWidth = canvas.parentElement.clientWidth;
+            const containerHeight = window.innerHeight;
+
+
+            ctx.clearRect(0,0,canvas.width, canvas.height);
+            ctx2.clearRect(0,0,canvas2.width, canvas2.height);
+
+
+            canvas.width = containerWidth/2.5;
+            canvas.height = containerWidth/2.5;
+            canvas2.width = containerWidth/2.5;
+            canvas2.height = containerWidth/2.5;
+
+            for (let i = 0; i < g.V; i++) {
+                vertextArray[i].X = (canvas.width / 2) + canvas.width/2.5 * Math.cos((i/g.V) * 2 * Math.PI);
+                vertextArray[i].Y = (canvas.width / 2) + canvas.width/2.5 * Math.sin((i/g.V) * 2 * Math.PI);
+            }
+
+            drawNode();
+            drawAlgoNode();
+        }
+
         for (let i = 0; i < g.V; i++){
             for (let j = 0; j < g.V; j++){
                 if (i != j && !g.exists(i,j)){
@@ -242,8 +305,6 @@
             vertextArray.push(new Vertex(posX, posY, 'white', nodeRadius));
         }
 
-        g.greedyColoring();
-
         canvas.addEventListener("click", function(event) {
             const rect = canvas.getBoundingClientRect();
             const mouseX = event.clientX - rect.left;
@@ -258,9 +319,36 @@
             }
         });
 
+        startButton.addEventListener("click", async function() {
+            isPaused = false;
+            startButton.disabled = true;
+            pauseButton.style.display = 'inline';
+            startButton.style.display = 'none';
+
+            if (!isPaused){
+                animate();
+            }
+        });
+
+        pauseButton.addEventListener("click", async function() {
+            isPaused = true;
+            startButton.disabled = false;
+            pauseButton.style.display = 'none';
+            startButton.style.display = 'inline';
+        });
+
+        checkButton.addEventListener("click", async function() {
+            for (let i = 0; i < g.V; i++){
+                console.log(vertextArray[i].user_color);
+            }
+        });
+
+        window.addEventListener("resize", resizeCanvas);
+
+        g.greedyColoring();
+        resizeCanvas();
         drawNode();
         drawAlgoNode();
-        animate();
 
     </script>
 </body>
