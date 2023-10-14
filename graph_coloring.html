@@ -5,7 +5,16 @@
 </head>
 <body style="background-color:darkgray;">
     <h1 class="title">Graph Coloring Game</h1>
+    <div class="algorithm-container">
+        <label for="nodeCount">Enter the number of nodes (2-10): </label>
+        <input type="number" id="nodeCount" min="2" max="10" value="0">
+    </div>
     <div style="display: flex;">
+        <div class="overlay" id="imageOverlay">
+            <div class="modal">
+                <img id="winner" class="image spin" src="winner.jpeg" alt="Spinning Image">
+            </div> 
+        </div>
         <div style="display: flex; flex-direction: column; width: 50%;">
             <div style="display: flex; justify-content: center; margin-bottom: 50px;">
                 <button style="width: auto;" id="verifyButton">Check Answer</button>
@@ -25,9 +34,9 @@
             </div>
         </div>
     </div>
-    <div style="display: flex; flex-direction: column; align-items: center;">
+    <!-- <div style="display: flex; flex-direction: column; align-items: center;">
         <button id="newGraphButton">New Graph</button>
-    </div>
+    </div> -->
     <style>
 
         #userCanvas {
@@ -49,6 +58,11 @@
             font-size: 50px;
         }
 
+        .algorithm-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+
         .confetti {
             position: absolute;
             width: 10px;
@@ -64,6 +78,47 @@
             100% {
                 transform: translate(calc(100vw * (0.5 - random())), 100vh) scaleY(1);
                 opacity: 0;
+            }
+        }
+
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        .modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 20px;
+            z-index: 2;
+        }
+
+        .spin {
+            animation: spin 2s linear infinite;
+        }
+        .pulse {
+            animation: pulse 1s infinite;
+        }
+        @keyframes spin {
+            0% {
+                transform: scale(0) rotate(0deg);
+            }
+            100% {
+                transform: scale(1) rotate(1800deg);
+            }
+        }
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.2);
             }
         }
 
@@ -155,21 +210,54 @@
         const nodeColors = ['red', 'green', 'blue', 'orange', 'purple', 'yellow', 'pink', 'brown', 'lightblue', 'violet', 'white'];
         const colors = ["red", "green", "blue", "yellow", "purple"];
 
-        const vertextArray = [];
-        const size = Math.floor(Math.random() * (10 - 5 + 1)) + 5;
-        const g = new Graph(size); 
+        const nodeCount = document.getElementById("nodeCount");
+        let size = 5;
+
+        let vertextArray = [];
+        if (nodeCount.value == 0){
+            size = Math.floor(Math.random() * (10 - 5 + 1)) + 5;
+        }else{
+            size = nodeCount.value;
+        }
+        let g = new Graph(size); 
 
         let vertex_counter = 0;
         let frame = 0;
-        const framePerNode = 60;
+        const framePerNode = 30;
         let color_index = -1;
 
         const startButton = document.getElementById("startButton");
         const pauseButton = document.getElementById("pauseButton");
         const checkButton = document.getElementById("verifyButton");
-        const newGraphButton = document.getElementById("newGraphButton");
+        // const newGraphButton = document.getElementById("newGraphButton");
+        const winnerImage = document.getElementById("winner");
+        const imageOverlay = document.getElementById("imageOverlay");
         let isPaused = false;
         let isDone = false;
+        let isSpinning = false;
+
+        function setUpAlgo() {
+
+            clearCanvas();
+
+            if (size == 0){
+                size = Math.floor(Math.random() * (10 - 2 + 1)) + 2;
+            }
+
+            // if (!isPaused){
+            //     vertex_counter = g.V;
+            // }
+
+            g = new Graph(size);
+            vertextArray = [];
+            createEdges();
+            createNodes();
+            drawAlgoNode();
+            g.greedyColoring();
+            resizeCanvas();
+            drawNode();
+
+        }
 
         function drawNode() {
             ctx.clearRect(0,0,canvas.width, canvas.height);
@@ -300,8 +388,7 @@
             const containerHeight = window.innerHeight;
 
 
-            ctx.clearRect(0,0,canvas.width, canvas.height);
-            ctx2.clearRect(0,0,canvas2.width, canvas2.height);
+            clearCanvas();
 
 
             canvas.width = containerWidth/2;
@@ -335,25 +422,59 @@
             }
         }
 
-        for (let i = 0; i < g.V; i++){
-            for (let j = 0; j < g.V; j++){
-                if (i != j && !g.exists(i,j)){
-                    if (g.adj[j].length > 1){
-                        if (Math.random() < 0.05){
+        function spin() {
+            if (!isSpinning){
+                // winnerImage.
+                imageOverlay.style.display = "block";
+                winnerImage.classList.remove("pulse");
+                winnerImage.classList.add("spin");
+                isSpinning = true;
+
+                setTimeout(() => {
+                    // Stop spinning
+                    winnerImage.classList.remove("spin");
+                    isSpinning = false;
+
+                    // Start pulsing animation
+                    winnerImage.classList.add("pulse");
+                    setTimeout(() =>  {
+                        winnerImage.classList.remove("pulse");
+                        winnerImage.classList.add("spin");
+                        isSpinning = true;
+                        imageOverlay.style.display = "none";
+                    }, 5000);
+                }, 2000);
+            }
+        }
+
+        function createEdges() {
+            for (let i = 0; i < g.V; i++){
+                for (let j = 0; j < g.V; j++){
+                    if (i != j && !g.exists(i,j)){
+                        if (g.adj[j].length > 1){
+                            if (Math.random() < 0.05){
+                                g.addEdge(i,j);
+                            }
+                        }
+                        else if (Math.random() < 0.3){
                             g.addEdge(i,j);
                         }
-                    }
-                    else if (Math.random() < 0.3){
-                        g.addEdge(i,j);
                     }
                 }
             }
         }
 
-        for (let v = 0; v < g.V; v++) {
-            let posX = (canvas.width / 2) + 200 * Math.cos((v/g.V) * 2 * Math.PI);
-            let posY = (canvas.width / 2) + 200 * Math.sin((v/g.V) * 2 * Math.PI);
-            vertextArray.push(new Vertex(posX, posY, 'white', nodeRadius));
+        function createNodes() {
+            for (let v = 0; v < g.V; v++) {
+                let posX = (canvas.width / 2) + 200 * Math.cos((v/g.V) * 2 * Math.PI);
+                let posY = (canvas.width / 2) + 200 * Math.sin((v/g.V) * 2 * Math.PI);
+                vertextArray.push(new Vertex(posX, posY, 'white', nodeRadius));
+            }
+        }
+
+        function clearCanvas() {
+            ctx.clearRect(0,0,canvas.width, canvas.height);
+            ctx2.clearRect(0,0,canvas2.width, canvas2.height);
         }
 
         canvas.addEventListener("click", function(event) {
@@ -402,14 +523,36 @@
             console.log("Good solution");
 
             createConfetti(200);
+            spin();
         });
 
-        newGraphButton.addEventListener("click", async function() {
-            location.reload();
-        })
+        // newGraphButton.addEventListener("click", async function() {
+        //     location.reload();
+        // })
 
         window.addEventListener("resize", resizeCanvas);
 
+        nodeCount.addEventListener("keyup", function(event) {
+            if (event.key === "Enter"){
+                event.preventDefault();
+
+                size = nodeCount.value;
+
+                if ((size >= 2 && size <= 10) || size == 0) {
+                    if (!isPaused){
+                        vertex_counter = g.V;
+                    }
+                    setUpAlgo();
+                }
+                else{
+                    alert("Node amount must be between 2 and 10.");
+                }
+            }
+        })
+
+
+        createEdges();
+        createNodes();
         g.greedyColoring();
         resizeCanvas();
         drawNode();
